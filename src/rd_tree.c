@@ -200,6 +200,41 @@ struct pott_rd_tree_node * __minimum(struct pott_rd_tree *tree, struct pott_rd_t
     return &tree->nil;
 }
 
+static
+void __clear(struct pott_rd_tree *tree, struct pott_rd_tree_node *node) {
+    if (node == &tree->nil) {
+        return;
+    }
+
+    if (node->left != &tree->nil) {
+        __clear(tree, node->left);
+    }
+    if (node->right != &tree->nil) {
+        __clear(tree, node->right);
+    }
+
+    if (tree->dtor_key_cb != NULL) {
+        tree->dtor_key_cb(node->key);
+    }
+    if (tree->dtor_data_cb != NULL) {
+        tree->dtor_data_cb(node->data);
+    }
+    free(node);
+}
+
+static
+void __each(struct pott_rd_tree *tree,
+            struct pott_rd_tree_node *node,
+            void (*cb)(const void *, void *)) {
+    if (node->left != &tree->nil) {
+        __each(tree, node->left, cb);
+    }
+    cb(node->key, node->key);
+    if (node->right != &tree->nil) {
+        __each(tree, node->right, cb);
+    }
+}
+
 struct pott_rd_tree *
 pott_rdtree_create(void (*dtor_key_cb)(void *), 
                    void (*dtor_data_cb)(void *),
@@ -322,6 +357,7 @@ int pott_rdtree_delete(struct pott_rd_tree *tree, struct pott_rd_tree_node *node
     }
     if (tree != node->tree) {
         warn("this node is not belong with this tree");
+        return -3;
     }
 
     struct pott_rd_tree_node *x;
@@ -363,6 +399,31 @@ int pott_rdtree_delete(struct pott_rd_tree *tree, struct pott_rd_tree_node *node
     if (tree->dtor_data_cb != NULL) {
         tree->dtor_data_cb(node->data);
     }
+    free(node);
 
     return 0;
+}
+
+int pott_rdtree_clear(struct pott_rd_tree *tree) {
+    if (pott_rdtree_empty(tree)) {
+        return 0;
+    }
+    __clear(tree, tree->root);
+
+    tree->root = &tree->nil;
+    tree->node_count = 0;
+
+    return 0;
+}
+
+bool_t pott_rdtree_empty(struct pott_rd_tree *tree) {
+    return tree->node_count == 0;
+}
+
+void pott_rdtree_each(struct pott_rd_tree *tree, void (*cb)(const void *, void *)) {
+    if (pott_rdtree_empty(tree)) {
+        return;
+    }
+
+    __each(tree, tree->root, cb);
 }
