@@ -18,14 +18,14 @@
     fprintf(stderr, \
             CL_COLOR_YELLOW "WARN [file: \"" __FILE__ "\". line: %i] " s CL_COLOR_WHITE "\n", \
             __LINE__, ##args)
-#define eror(s, args...) \
+#define error(s, args...) \
     fprintf(stderr, \
             CL_COLOR_RED "EROR [file: \"" __FILE__ "\". line: %i] " s CL_COLOR_WHITE "\n", \
             __LINE__, ##args)
 #else
 #define info(s, ...) 
 #define warn(s, ...)
-#define eror(s, ...)
+#define error(s, ...)
 #endif
 
 #endif
