@@ -201,25 +201,19 @@ struct pott_rd_tree_node * __minimum(struct pott_rd_tree *tree, struct pott_rd_t
 }
 
 static
-void __clear(struct pott_rd_tree *tree, struct pott_rd_tree_node *node) {
+void __clear(struct pott_rd_tree *tree, struct pott_rd_tree_node *node, void (*clear_cb)(struct pott_rd_tree_node *)) {
     if (node == &tree->nil) {
         return;
     }
 
     if (node->left != &tree->nil) {
-        __clear(tree, node->left);
+        __clear(tree, node->left, clear_cb);
     }
     if (node->right != &tree->nil) {
-        __clear(tree, node->right);
+        __clear(tree, node->right, clear_cb);
     }
-
-    if (tree->dtor_key_cb != NULL) {
-        tree->dtor_key_cb(node->key);
-    }
-    if (tree->dtor_data_cb != NULL) {
-        tree->dtor_data_cb(node->data);
-    }
-    free(node);
+    
+    clear_cb(node);
 }
 
 static
@@ -236,9 +230,7 @@ void __each(struct pott_rd_tree *tree,
 }
 
 struct pott_rd_tree *
-pott_rdtree_create(void (*dtor_key_cb)(void *), 
-                   void (*dtor_data_cb)(void *),
-                   int (*key_cmp_cb)(void *, void *)) {
+pott_rdtree_create(int (*key_cmp_cb)(void *, void *)) {
     struct pott_rd_tree *ret =
         (struct pott_rd_tree *) malloc(sizeof(struct pott_rd_tree));
     if (ret == NULL) {
@@ -248,8 +240,6 @@ pott_rdtree_create(void (*dtor_key_cb)(void *),
 
     ret->root = &ret->nil;
     ret->node_count = 0;
-    ret->dtor_key_cb = dtor_key_cb;
-    ret->dtor_data_cb = dtor_data_cb;
     ret->key_cmp_cb = key_cmp_cb;
 
     ret->nil.color = RD_TREE_COLOR_BLACK;
@@ -393,22 +383,16 @@ int pott_rdtree_delete(struct pott_rd_tree *tree, struct pott_rd_tree_node *node
         __delete_fixup(tree, x);
     }
 
-    if (tree->dtor_key_cb != NULL) {
-        tree->dtor_key_cb(node->key);
-    }
-    if (tree->dtor_data_cb != NULL) {
-        tree->dtor_data_cb(node->data);
-    }
     free(node);
 
     return 0;
 }
 
-int pott_rdtree_clear(struct pott_rd_tree *tree) {
+int pott_rdtree_clear(struct pott_rd_tree *tree, void (*clear_cb)(struct pott_rd_tree_node *)) {
     if (pott_rdtree_empty(tree)) {
         return 0;
     }
-    __clear(tree, tree->root);
+    __clear(tree, tree->root, clear_cb);
 
     tree->root = &tree->nil;
     tree->node_count = 0;
@@ -426,4 +410,16 @@ void pott_rdtree_each(struct pott_rd_tree *tree, void (*cb)(const void *, void *
     }
 
     __each(tree, tree->root, cb);
+}
+
+int pott_rdtree_destory(struct pott_rd_tree *tree, void (*clear_cb)(struct pott_rd_tree_node *)) {
+    if (tree == NULL) {
+        return -1;
+    }
+
+    pott_rdtree_clear(tree, clear_cb);
+
+    free(tree);
+
+    return 0;
 }

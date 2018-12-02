@@ -26,22 +26,19 @@ struct pott_rd_tree {
     struct pott_rd_tree_node *root;
     int node_count;
 
-    void (*dtor_key_cb)(void *);
-    void (*dtor_data_cb)(void *);
     int (*key_cmp_cb)(void *, void *);
 
     struct pott_rd_tree_node nil;
 };
 
 struct pott_rd_tree *
-pott_rdtree_create(void (*dtor_key_cb)(void *),
-                   void (*dtor_data_cb)(void *),
-                   int (*key_cmp_cb)(void *, void *));
+pott_rdtree_create(int (*key_cmp_cb)(void *, void *));
 int pott_rdtree_insert(struct pott_rd_tree *tree, void *key, void *val);
 struct pott_rd_tree_node *pott_rdtree_find(struct pott_rd_tree *tree, void *key);
 int pott_rdtree_delete(struct pott_rd_tree *tree, struct pott_rd_tree_node *node);
-int pott_rdtree_clear(struct pott_rd_tree *tree);
+int pott_rdtree_clear(struct pott_rd_tree *tree, void (*clear_cb)(struct pott_rd_tree_node *));
 bool_t pott_rdtree_empty(struct pott_rd_tree *tree);
 void pott_rdtree_each(struct pott_rd_tree *tree, void (*cb)(const void *, void *));
+int pott_rdtree_destory(struct pott_rd_tree *tree, void (*clear_cb)(struct pott_rd_tree_node *));
 
 #endif
